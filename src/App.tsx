@@ -19,10 +19,10 @@ import {
   CloudCheck
 } from 'lucide-react';
 
-import { Transaction, TransactionType, ShoppingItem, ViewType, User, SubscriptionStatus } from './types';
-import { INCOME_CATEGORIES, EXPENSE_CATEGORIES, SHOPPING_CATEGORIES } from './constants';
-import { supabase } from './lib/supabase';
-import Dashboard from './components/Dashboard';
+import { Transaction, TransactionType, ShoppingItem, ViewType, User, SubscriptionStatus } from '@/types';
+import { INCOME_CATEGORIES, EXPENSE_CATEGORIES, SHOPPING_CATEGORIES } from '@/constants';
+import { supabase } from '@/lib/supabase';
+import Dashboard from '@/components/Dashboard';
 import TransactionManager from './components/TransactionManager';
 import ShoppingManager from './components/ShoppingManager';
 import Analytics from './components/Analytics';
