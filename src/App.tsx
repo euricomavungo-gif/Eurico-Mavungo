@@ -23,12 +23,12 @@ import { Transaction, TransactionType, ShoppingItem, ViewType, User, Subscriptio
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES, SHOPPING_CATEGORIES } from '@/constants';
 import { supabase } from '@/lib/supabase';
 import Dashboard from '@/components/Dashboard';
-import TransactionManager from './components/TransactionManager';
-import ShoppingManager from './components/ShoppingManager';
-import Analytics from './components/Analytics';
-import Reports from './components/Reports';
-import Auth from './components/Auth';
-import Paywall from './components/Paywall';
+import TransactionManager from '@/components/TransactionManager';
+import ShoppingManager from '@/components/ShoppingManager';
+import Analytics from '@/components/Analytics';
+import Reports from '@/components/Reports';
+import Auth from '@/components/Auth';
+import Paywall from '@/components/Paywall';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
