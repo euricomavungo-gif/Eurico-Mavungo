@@ -82,7 +82,7 @@ const TransactionManager: React.FC<TransactionManagerProps> = ({
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-separate border-spacing-y-2">
             <thead>
               <tr className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
@@ -116,16 +116,41 @@ const TransactionManager: React.FC<TransactionManagerProps> = ({
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-20 text-center text-slate-400 font-medium text-sm italic">
-                    Nenhuma movimentação em {selectedMonth}.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Card List */}
+        <div className="md:hidden space-y-3">
+          {filtered.map(tx => (
+            <div key={tx.id} className="p-4 bg-slate-50/50 rounded-2xl border border-transparent hover:border-slate-100 transition-all">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${tx.type === TransactionType.INCOME ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                  <span className="font-black text-slate-800">{tx.category}</span>
+                </div>
+                <button onClick={() => onDelete(tx.id)} className="p-1.5 text-slate-300 hover:text-red-500">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{new Date(tx.date).toLocaleDateString('pt-PT')}</p>
+                  {tx.note && <p className="text-xs text-slate-500 italic mt-1">{tx.note}</p>}
+                </div>
+                <span className={`font-black text-base ${tx.type === TransactionType.INCOME ? 'text-emerald-600' : 'text-slate-900'}`}>
+                  Kz {tx.amount.toLocaleString('pt-PT', { minimumFractionDigits: 1 })}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="py-20 text-center text-slate-400 font-medium text-sm italic">
+            Nenhuma movimentação em {selectedMonth}.
+          </div>
+        )}
       </div>
     </div>
   );

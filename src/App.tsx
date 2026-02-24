@@ -326,10 +326,33 @@ const App: React.FC = () => {
         <div className="fixed inset-0 bg-black/50" onClick={() => setIsSidebarOpen(false)}></div>
         <div className="fixed top-0 bottom-0 left-0 w-64 bg-white shadow-xl">
           <div className="p-6 flex items-center justify-between border-b">
-            <h1 className="text-xl font-bold text-emerald-600">MeuboLSO</h1>
-            <button onClick={() => setIsSidebarOpen(false)}><X className="w-6 h-6" /></button>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <h1 className="text-xl font-bold text-emerald-600">MeuboLSO</h1>
+            </div>
+            <button onClick={() => setIsSidebarOpen(false)} className="p-2 text-slate-400 hover:text-slate-600"><X className="w-6 h-6" /></button>
           </div>
-          <nav className="p-4 space-y-2">
+          
+          {/* Mobile Temporal Navigation */}
+          <div className="px-6 py-4 border-b bg-slate-50/50">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Navegação Temporal</p>
+            <div className="flex items-center justify-between gap-2">
+              <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-emerald-100 hover:text-emerald-700 rounded-lg text-slate-400 transition-colors">
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="flex flex-col items-center">
+                <span className="text-sm font-black text-slate-800 capitalize leading-none">{monthLabel.split(' ')[0]}</span>
+                <span className="text-[10px] font-bold text-slate-400">{monthLabel.split(' ')[1]}</span>
+              </div>
+              <button onClick={() => changeMonth(1)} className="p-2 hover:bg-emerald-100 hover:text-emerald-700 rounded-lg text-slate-400 transition-colors">
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          <nav className="p-4 space-y-2 overflow-y-auto max-h-[calc(100vh-250px)]">
             {navItems.map(item => (
               <button
                 key={item.id}
@@ -432,19 +455,28 @@ const App: React.FC = () => {
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-20 flex items-center justify-between px-6 lg:px-10 bg-white border-b lg:hidden">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white">
-              <Wallet className="w-5 h-5" />
+        <header className="h-20 flex items-center justify-between px-4 md:px-6 lg:px-10 bg-white border-b lg:hidden sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 -ml-2 text-slate-600 hover:bg-slate-50 rounded-lg"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div className="flex flex-col">
+              <h1 className="text-sm font-black text-slate-800 capitalize leading-none">{monthLabel.split(' ')[0]}</h1>
+              <span className="text-[10px] font-bold text-slate-400">{monthLabel.split(' ')[1]}</span>
             </div>
-            <h1 className="text-xl font-bold text-slate-800 line-clamp-1">{monthLabel}</h1>
           </div>
-          <button 
-            onClick={() => setIsSidebarOpen(true)}
-            className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
+          
+          <div className="flex items-center gap-1">
+            <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400">
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10">

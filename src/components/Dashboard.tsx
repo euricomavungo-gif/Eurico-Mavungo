@@ -150,12 +150,12 @@ const Dashboard: React.FC<DashboardProps> = ({ transactions, onAddTransaction, m
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Category Chart */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+        <div className="bg-white p-4 md:p-6 rounded-3xl border border-slate-100 shadow-sm">
           <h4 className="text-base font-black text-slate-800 mb-6 flex items-center gap-2">
             <PieChartIcon className="w-5 h-5 text-emerald-500" />
             Despesas por Categoria
           </h4>
-          <div className="h-64">
+          <div className="h-64 md:h-80">
             {categoryData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>

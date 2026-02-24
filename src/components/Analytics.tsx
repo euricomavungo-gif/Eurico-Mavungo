@@ -75,10 +75,10 @@ const Analytics: React.FC<AnalyticsProps> = ({ transactions }) => {
     const percent = compareVal ? (diff / compareVal) * 100 : 0;
 
     return (
-      <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-        <p className="text-sm font-bold text-slate-400 mb-1 uppercase">{label}</p>
-        <div className="flex items-baseline gap-2">
-          <h3 className="text-3xl font-black text-slate-900">Kz {currentVal.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}</h3>
+      <div className="bg-white p-5 md:p-6 rounded-3xl border border-slate-100 shadow-sm">
+        <p className="text-[10px] md:text-sm font-bold text-slate-400 mb-1 uppercase tracking-wider">{label}</p>
+        <div className="flex items-baseline flex-wrap gap-2">
+          <h3 className="text-xl md:text-3xl font-black text-slate-900">Kz {currentVal.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}</h3>
           {compareVal !== undefined && (
             <span className={`text-xs font-bold flex items-center gap-0.5 px-2 py-1 rounded-full ${
               diff > 0 ? (type === 'positive' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600') : 
