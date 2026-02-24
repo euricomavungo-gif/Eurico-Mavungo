@@ -21,7 +21,7 @@ import {
 
 import { Transaction, TransactionType, ShoppingItem, ViewType, User, SubscriptionStatus } from '@/types';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES, SHOPPING_CATEGORIES } from '@/constants';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import Dashboard from '@/components/Dashboard';
 import TransactionManager from '@/components/TransactionManager';
 import ShoppingManager from '@/components/ShoppingManager';
@@ -68,31 +68,33 @@ const App: React.FC = () => {
       }
     };
 
-    checkSession();
+    if (isSupabaseConfigured) {
+      checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        const user: User = {
-          id: session.user.id,
-          name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'Usuário',
-          email: session.user.email || '',
-          createdAt: new Date(session.user.created_at).getTime(),
-          subscriptionStatus: SubscriptionStatus.ACTIVE
-        };
-        setCurrentUser(user);
-        fetchUserData(user.id);
-      } else {
-        setCurrentUser(null);
-        setTransactions([]);
-        setShoppingItems([]);
-      }
-    });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          const user: User = {
+            id: session.user.id,
+            name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'Usuário',
+            email: session.user.email || '',
+            createdAt: new Date(session.user.created_at).getTime(),
+            subscriptionStatus: SubscriptionStatus.ACTIVE
+          };
+          setCurrentUser(user);
+          fetchUserData(user.id);
+        } else {
+          setCurrentUser(null);
+          setTransactions([]);
+          setShoppingItems([]);
+        }
+      });
 
-    return () => subscription.unsubscribe();
+      return () => subscription.unsubscribe();
+    }
   }, []);
 
   const fetchUserData = async (userId: string) => {
-    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+    if (!isSupabaseConfigured) {
       console.warn('Supabase not configured, skipping fetch.');
       return;
     }
@@ -139,7 +141,9 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut();
+    }
     setCurrentUser(null);
     setActiveView('dashboard');
   };
@@ -149,7 +153,9 @@ const App: React.FC = () => {
     setCategories(updated);
     if (currentUser) {
       triggerSync();
-      await supabase.from('profiles').upsert({ id: currentUser.id, categories: updated });
+      if (isSupabaseConfigured) {
+        await supabase.from('profiles').upsert({ id: currentUser.id, categories: updated });
+      }
     }
   };
 
@@ -162,7 +168,9 @@ const App: React.FC = () => {
     };
     setTransactions(prev => [newTx, ...prev]);
     triggerSync();
-    await supabase.from('transactions').insert(newTx);
+    if (isSupabaseConfigured) {
+      await supabase.from('transactions').insert(newTx);
+    }
   };
 
   const addShoppingItem = async (item: Omit<ShoppingItem, 'id' | 'userId'>) => {
@@ -175,7 +183,9 @@ const App: React.FC = () => {
     };
     setShoppingItems(prev => [newItem, ...prev]);
     triggerSync();
-    await supabase.from('shopping_items').insert(newItem);
+    if (isSupabaseConfigured) {
+      await supabase.from('shopping_items').insert(newItem);
+    }
   };
 
   const toggleShoppingItem = async (id: string) => {
@@ -185,19 +195,25 @@ const App: React.FC = () => {
     const newChecked = !item.checked;
     setShoppingItems(prev => prev.map(i => i.id === id ? { ...i, checked: newChecked } : i));
     triggerSync();
-    await supabase.from('shopping_items').update({ checked: newChecked }).eq('id', id);
+    if (isSupabaseConfigured) {
+      await supabase.from('shopping_items').update({ checked: newChecked }).eq('id', id);
+    }
   };
 
   const deleteTransaction = async (id: string) => {
     setTransactions(prev => prev.filter(t => t.id !== id));
     triggerSync();
-    await supabase.from('transactions').delete().eq('id', id);
+    if (isSupabaseConfigured) {
+      await supabase.from('transactions').delete().eq('id', id);
+    }
   };
 
   const deleteShoppingItem = async (id: string) => {
     setShoppingItems(prev => prev.filter(i => i.id !== id));
     triggerSync();
-    await supabase.from('shopping_items').delete().eq('id', id);
+    if (isSupabaseConfigured) {
+      await supabase.from('shopping_items').delete().eq('id', id);
+    }
   };
 
   const monthLabel = useMemo(() => {
@@ -225,9 +241,9 @@ const App: React.FC = () => {
   if (!currentUser) {
     return (
       <>
-        {(!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) && (
+        {!isSupabaseConfigured && (
           <div className="fixed top-0 left-0 right-0 bg-amber-500 text-white text-[10px] font-bold py-1 px-4 text-center z-[100] uppercase tracking-widest">
-            Configuração do Supabase ausente. Conecte as variáveis de ambiente para sincronizar seus dados.
+            Modo de Demonstração Ativo. Conecte o Supabase para salvar seus dados permanentemente.
           </div>
         )}
         <Auth onLogin={(user) => setCurrentUser(user)} />

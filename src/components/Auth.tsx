@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { User, SubscriptionStatus } from '@/types';
 import { Wallet, ShieldCheck, Zap, ArrowRight, LogIn, Eye, EyeOff, Copyright, Database, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface AuthProps {
   onLogin: (user: User) => void;
@@ -21,6 +21,19 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     setIsLoading(true);
     
     try {
+      if (!isSupabaseConfigured) {
+        // Handle demo mode if not configured
+        const demoUser: User = {
+          id: 'demo-user',
+          name: name || 'Usuário Demo',
+          email: email || 'demo@example.com',
+          createdAt: Date.now(),
+          subscriptionStatus: SubscriptionStatus.ACTIVE
+        };
+        onLogin(demoUser);
+        return;
+      }
+
       if (isLogin) {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -68,7 +81,19 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     } catch (error: any) {
       console.error('Auth error:', error);
       if (error.message === 'Failed to fetch') {
-        alert('Erro de conexão: Não foi possível conectar ao Supabase. Verifique se as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY estão configuradas corretamente.');
+        if (!isSupabaseConfigured) {
+          alert('Modo Demo: O Supabase não está configurado. Suas alterações serão salvas apenas localmente nesta sessão.');
+          const demoUser: User = {
+            id: 'demo-user',
+            name: name || 'Usuário Demo',
+            email: email || 'demo@example.com',
+            createdAt: Date.now(),
+            subscriptionStatus: SubscriptionStatus.ACTIVE
+          };
+          onLogin(demoUser);
+        } else {
+          alert('Erro de conexão: Não foi possível conectar ao Supabase. Verifique sua internet ou as chaves configuradas.');
+        }
       } else {
         alert(error.message || 'Erro na autenticação');
       }
