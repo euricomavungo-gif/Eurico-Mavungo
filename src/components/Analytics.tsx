@@ -38,23 +38,36 @@ const Analytics: React.FC<AnalyticsProps> = ({ transactions }) => {
   const current = monthlyStats[selectedMonth] || { income: 0, expense: 0 };
   const comparison = compareMonth ? monthlyStats[compareMonth] : null;
 
-  // Fix: Only show the selected month and comparison month in the chart to avoid combining data from other months
+  // Fix: Only show the selected month and comparison month (or previous month) in the chart
   const chartData = useMemo(() => {
     const monthsToShow = [selectedMonth];
+    
     if (compareMonth && compareMonth !== selectedMonth) {
       monthsToShow.push(compareMonth);
+    } else {
+      // If no comparison month is selected, automatically show the previous month
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const prevDate = new Date(year, month - 2, 15);
+      const prevYear = prevDate.getFullYear();
+      const prevMonth = String(prevDate.getMonth() + 1).padStart(2, '0');
+      monthsToShow.push(`${prevYear}-${prevMonth}`);
     }
     
     return monthsToShow
       .map(month => {
         const data = monthlyStats[month] || { income: 0, expense: 0 };
+        // Format month name for the chart
+        const date = new Date(month + '-15');
+        const formattedName = date.toLocaleString('pt-PT', { month: 'short', year: 'numeric' });
+        
         return {
-          name: month,
+          name: formattedName,
+          rawMonth: month,
           Receita: data.income,
           Despesa: data.expense
         };
       })
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => a.rawMonth.localeCompare(b.rawMonth));
   }, [monthlyStats, selectedMonth, compareMonth]);
 
   const StatBox = ({ label, currentVal, compareVal, type }: { label: string, currentVal: number, compareVal?: number, type: 'positive' | 'negative' }) => {
@@ -125,7 +138,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ transactions }) => {
 
       <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
         <h4 className="text-lg font-bold text-slate-800 mb-8">Evolução Financeira Mensal</h4>
-        <div className="h-96">
+        <div className="h-72">
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
