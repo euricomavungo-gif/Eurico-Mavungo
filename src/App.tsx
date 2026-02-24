@@ -235,7 +235,9 @@ const App: React.FC = () => {
   );
 
   const currentMonthShopping = useMemo(() => 
-    shoppingItems.filter(i => !i.isFuture && i.date.startsWith(selectedMonth)), [shoppingItems, selectedMonth]
+    shoppingItems.filter(i => 
+      !i.isFuture && (i.date.startsWith(selectedMonth) || (i.date < selectedMonth && !i.checked))
+    ), [shoppingItems, selectedMonth]
   );
 
   if (!currentUser) {

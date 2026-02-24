@@ -70,7 +70,9 @@ const Reports: React.FC<ReportsProps> = ({ transactions, shoppingItems }) => {
 
     } else if (type === 'shopping' || type === 'future') {
       const isFuture = type === 'future';
-      const items = shoppingItems.filter(i => i.isFuture === isFuture && (isFuture || i.date.startsWith(reportMonth)));
+      const items = shoppingItems.filter(i => 
+        i.isFuture === isFuture && (isFuture || i.date.startsWith(reportMonth) || (i.date < reportMonth && !i.checked))
+      );
       
       doc.setFontSize(16);
       doc.setTextColor(30, 41, 59);
