@@ -66,7 +66,12 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         }
       }
     } catch (error: any) {
-      alert(error.message || 'Erro na autenticação');
+      console.error('Auth error:', error);
+      if (error.message === 'Failed to fetch') {
+        alert('Erro de conexão: Não foi possível conectar ao Supabase. Verifique se as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY estão configuradas corretamente.');
+      } else {
+        alert(error.message || 'Erro na autenticação');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -92,6 +92,10 @@ const App: React.FC = () => {
   }, []);
 
   const fetchUserData = async (userId: string) => {
+    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      console.warn('Supabase not configured, skipping fetch.');
+      return;
+    }
     setIsSyncing(true);
     try {
       // Fetch transactions
@@ -126,7 +130,8 @@ const App: React.FC = () => {
     } catch (error: any) {
       console.error('Error fetching data:', error);
       if (error.message === 'Failed to fetch') {
-        alert('Erro de conexão: Não foi possível conectar ao servidor. Verifique sua internet ou se as chaves do Supabase estão corretas.');
+        // Only alert once or handle silently if it's a recurring sync
+        console.warn('Supabase fetch failed. This usually means the URL/Key are invalid or missing.');
       }
     } finally {
       setIsSyncing(false);
@@ -214,13 +219,20 @@ const App: React.FC = () => {
   );
 
   const currentMonthShopping = useMemo(() => 
-    shoppingItems.filter(i => 
-      !i.isFuture && (i.date.startsWith(selectedMonth) || (i.date < selectedMonth && !i.checked))
-    ), [shoppingItems, selectedMonth]
+    shoppingItems.filter(i => !i.isFuture && i.date.startsWith(selectedMonth)), [shoppingItems, selectedMonth]
   );
 
   if (!currentUser) {
-    return <Auth onLogin={(user) => setCurrentUser(user)} />;
+    return (
+      <>
+        {(!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) && (
+          <div className="fixed top-0 left-0 right-0 bg-amber-500 text-white text-[10px] font-bold py-1 px-4 text-center z-[100] uppercase tracking-widest">
+            Configuração do Supabase ausente. Conecte as variáveis de ambiente para sincronizar seus dados.
+          </div>
+        )}
+        <Auth onLogin={(user) => setCurrentUser(user)} />
+      </>
+    );
   }
 
   if (currentUser.subscriptionStatus === SubscriptionStatus.EXPIRED) {
