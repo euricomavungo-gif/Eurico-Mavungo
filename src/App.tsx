@@ -123,8 +123,11 @@ const App: React.FC = () => {
       if (!profileError && profileData?.categories) {
         setCategories(profileData.categories);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching data:', error);
+      if (error.message === 'Failed to fetch') {
+        alert('Erro de conexão: Não foi possível conectar ao servidor. Verifique sua internet ou se as chaves do Supabase estão corretas.');
+      }
     } finally {
       setIsSyncing(false);
     }
@@ -199,8 +202,11 @@ const App: React.FC = () => {
 
   const changeMonth = (offset: number) => {
     const [year, month] = selectedMonth.split('-').map(Number);
-    const date = new Date(year, month - 1 + offset, 1);
-    setSelectedMonth(date.toISOString().slice(0, 7));
+    // Usamos o dia 15 para evitar problemas de virada de mês/fuso horário ao ajustar
+    const date = new Date(year, month - 1 + offset, 15);
+    const newYear = date.getFullYear();
+    const newMonth = String(date.getMonth() + 1).padStart(2, '0');
+    setSelectedMonth(`${newYear}-${newMonth}`);
   };
 
   const currentMonthTransactions = useMemo(() => 
@@ -208,7 +214,9 @@ const App: React.FC = () => {
   );
 
   const currentMonthShopping = useMemo(() => 
-    shoppingItems.filter(i => !i.isFuture && i.date.startsWith(selectedMonth)), [shoppingItems, selectedMonth]
+    shoppingItems.filter(i => 
+      !i.isFuture && (i.date.startsWith(selectedMonth) || (i.date < selectedMonth && !i.checked))
+    ), [shoppingItems, selectedMonth]
   );
 
   if (!currentUser) {

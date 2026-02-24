@@ -98,9 +98,19 @@ const Dashboard: React.FC<DashboardProps> = ({ transactions, onAddTransaction, m
       {highExpenses.length > 0 && (
         <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-2xl flex items-start gap-3 animate-pulse shadow-sm">
           <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
-          <div>
+          <div className="flex-1">
             <h4 className="font-black text-amber-900 text-sm">Atenção: Despesas Elevadas!</h4>
-            <p className="text-amber-800 text-xs font-medium">Você tem {highExpenses.length} despesa(s) que comprometem significativamente seu orçamento este mês. Revise seus gastos fixos.</p>
+            <p className="text-amber-800 text-xs font-medium mb-2">
+              Você tem {highExpenses.length} despesa(s) que comprometem significativamente seu orçamento este mês:
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {highExpenses.map(exp => (
+                <span key={exp.id} className="px-2 py-1 bg-amber-100 border border-amber-200 rounded-lg text-[10px] font-bold text-amber-700 uppercase">
+                  {exp.category}: Kz {exp.amount.toLocaleString('pt-PT')}
+                </span>
+              ))}
+            </div>
+            <p className="text-amber-600 text-[10px] mt-2 font-bold uppercase tracking-tight italic">Recomendamos revisar seus gastos fixos e prioridades.</p>
           </div>
         </div>
       )}
