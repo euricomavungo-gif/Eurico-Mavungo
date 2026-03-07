@@ -43,6 +43,7 @@ export interface ShoppingItem {
   isFuture: boolean;
   date: string;
   checked?: boolean;
+  checkedInMonth?: string;
 }
 
-export type ViewType = 'dashboard' | 'transactions' | 'shopping' | 'future' | 'analytics' | 'reports';
+export type ViewType = 'dashboard' | 'transactions' | 'shopping' | 'future' | 'analytics' | 'reports' | 'about';

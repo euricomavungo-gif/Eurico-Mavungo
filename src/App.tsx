@@ -16,7 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Copyright,
-  CloudCheck
+  CloudCheck,
+  Info
 } from 'lucide-react';
 
 import { Transaction, TransactionType, ShoppingItem, ViewType, User, SubscriptionStatus } from '@/types';
@@ -29,6 +30,7 @@ import Analytics from '@/components/Analytics';
 import Reports from '@/components/Reports';
 import Auth from '@/components/Auth';
 import Paywall from '@/components/Paywall';
+import About from '@/components/About';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -193,10 +195,15 @@ const App: React.FC = () => {
     if (!item) return;
     
     const newChecked = !item.checked;
-    setShoppingItems(prev => prev.map(i => i.id === id ? { ...i, checked: newChecked } : i));
+    const checkedInMonth = newChecked ? selectedMonth : undefined;
+    
+    setShoppingItems(prev => prev.map(i => i.id === id ? { ...i, checked: newChecked, checkedInMonth } : i));
     triggerSync();
     if (isSupabaseConfigured) {
-      await supabase.from('shopping_items').update({ checked: newChecked }).eq('id', id);
+      await supabase.from('shopping_items').update({ 
+        checked: newChecked,
+        checkedInMonth: checkedInMonth
+      }).eq('id', id);
     }
   };
 
@@ -236,7 +243,11 @@ const App: React.FC = () => {
 
   const currentMonthShopping = useMemo(() => 
     shoppingItems.filter(i => 
-      !i.isFuture && (i.date.startsWith(selectedMonth) || (i.date < selectedMonth && !i.checked))
+      !i.isFuture && (
+        i.date.startsWith(selectedMonth) || 
+        (i.date < selectedMonth && !i.checked) ||
+        (i.date < selectedMonth && i.checkedInMonth === selectedMonth)
+      )
     ), [shoppingItems, selectedMonth]
   );
 
@@ -305,6 +316,8 @@ const App: React.FC = () => {
         return <Analytics transactions={transactions} />;
       case 'reports':
         return <Reports transactions={transactions} shoppingItems={shoppingItems} />;
+      case 'about':
+        return <About />;
       default:
         return null;
     }
@@ -365,6 +378,15 @@ const App: React.FC = () => {
                 <span className="font-medium">{item.label}</span>
               </button>
             ))}
+            <button
+              onClick={() => { setActiveView('about'); setIsSidebarOpen(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                activeView === 'about' ? 'bg-emerald-50 text-emerald-600' : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Info className="w-5 h-5" />
+              <span className="font-medium">Sobre</span>
+            </button>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 mt-10"
@@ -444,6 +466,17 @@ const App: React.FC = () => {
               {currentUser.subscriptionStatus === SubscriptionStatus.TRIAL ? 'TRIAL 7 DIAS' : 'PREMIUM'}
             </div>
           </div>
+          <button
+            onClick={() => setActiveView('about')}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all mb-2 ${
+              activeView === 'about' 
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-100' 
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+            }`}
+          >
+            <Info className={`w-5 h-5 ${activeView === 'about' ? 'text-white' : 'text-emerald-500'}`} />
+            <span className="font-semibold text-left line-clamp-1">Sobre</span>
+          </button>
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all font-semibold"

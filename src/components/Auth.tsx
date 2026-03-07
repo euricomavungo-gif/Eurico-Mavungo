@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { User, SubscriptionStatus } from '@/types';
-import { Wallet, ShieldCheck, Zap, ArrowRight, LogIn, Eye, EyeOff, Copyright, Database, Loader2 } from 'lucide-react';
+import { Wallet, ShieldCheck, Zap, ArrowRight, LogIn, Eye, EyeOff, Copyright, Database, Loader2, Mail } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 interface AuthProps {
@@ -10,11 +10,55 @@ interface AuthProps {
 
 const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    if (!isSupabaseConfigured) {
+      alert('Modo Demo: Google Login não disponível sem configuração do Supabase.');
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      alert(error.message || 'Erro ao entrar com Google');
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      alert('Por favor, insira seu email.');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      if (!isSupabaseConfigured) {
+        alert('Modo Demo: Recuperação de senha não disponível.');
+        return;
+      }
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      alert('Email de recuperação enviado! Verifique sua caixa de entrada.');
+      setIsForgotPassword(false);
+    } catch (error: any) {
+      alert(error.message || 'Erro ao enviar email de recuperação');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,50 +182,100 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           </div>
 
           <div className="mb-8">
-            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-2">{isLogin ? 'Bem-vindo' : 'Criar Conta'}</h2>
-            <p className="text-slate-500 font-medium">Acesse sua carteira inteligente conectada.</p>
+            <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-2">
+              {isForgotPassword ? 'Recuperar Senha' : (isLogin ? 'Bem-vindo' : 'Criar Conta')}
+            </h2>
+            <p className="text-slate-500 font-medium">
+              {isForgotPassword ? 'Enviaremos um link para o seu email.' : 'Acesse sua carteira inteligente conectada.'}
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
-            {!isLogin && (
-              <input type="text" required value={name} onChange={e => setName(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 font-bold transition-all" placeholder="Seu nome" />
-            )}
-            <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 font-bold transition-all" placeholder="Email" />
-            
-            <div className="relative">
-              <input 
-                type={showPassword ? "text" : "password"} 
-                required 
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 font-bold transition-all" 
-                placeholder="Senha" 
-              />
+          {isForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 font-bold transition-all" placeholder="Seu email cadastrado" />
               <button 
-                type="button" 
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors"
+                type="submit" 
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-2 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-lg transition-all shadow-xl shadow-emerald-100 disabled:opacity-70"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Mail className="w-5 h-5" /> Enviar Link</>}
               </button>
-            </div>
+              <button type="button" onClick={() => setIsForgotPassword(false)} className="w-full text-slate-500 font-bold text-sm hover:text-emerald-600 transition-colors">
+                Voltar para o Login
+              </button>
+            </form>
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
+                {!isLogin && (
+                  <input type="text" required value={name} onChange={e => setName(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 font-bold transition-all" placeholder="Seu nome" />
+                )}
+                <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 font-bold transition-all" placeholder="Email" />
+                
+                <div className="relative">
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    required 
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500 font-bold transition-all" 
+                    placeholder="Senha" 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
 
-            <button 
-              type="submit" 
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-4 md:py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-lg transition-all shadow-xl shadow-emerald-100 disabled:opacity-70"
-            >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                isLogin ? <><LogIn className="w-5 h-5" /> Entrar</> : <><ArrowRight className="w-5 h-5" /> Cadastrar</>
-              )}
-            </button>
-          </form>
+                {isLogin && (
+                  <div className="flex justify-end">
+                    <button type="button" onClick={() => setIsForgotPassword(true)} className="text-xs font-bold text-emerald-600 hover:underline">
+                      Esqueceu a senha?
+                    </button>
+                  </div>
+                )}
 
-          <button onClick={() => setIsLogin(!isLogin)} className="mt-6 md:mt-8 text-slate-500 font-bold text-sm hover:text-emerald-600 transition-colors w-full">
-            {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Entre aqui'}
-          </button>
+                <button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center gap-2 py-4 md:py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-lg transition-all shadow-xl shadow-emerald-100 disabled:opacity-70"
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    isLogin ? <><LogIn className="w-5 h-5" /> Entrar</> : <><ArrowRight className="w-5 h-5" /> Cadastrar</>
+                  )}
+                </button>
+              </form>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+                <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-400 font-bold">Ou continue com</span></div>
+              </div>
+
+              <button 
+                onClick={handleGoogleLogin}
+                className="w-full flex items-center justify-center gap-3 py-4 border-2 border-slate-100 hover:bg-slate-50 rounded-2xl font-bold text-slate-700 transition-all"
+              >
+                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                Entrar com Google
+              </button>
+
+              <button onClick={() => setIsLogin(!isLogin)} className="mt-6 md:mt-8 text-slate-500 font-bold text-sm hover:text-emerald-600 transition-colors w-full">
+                {isLogin ? 'Não tem conta? Cadastre-se' : 'Já tem conta? Entre aqui'}
+              </button>
+            </>
+          )}
+
+          <div className="mt-12 pt-8 border-t border-slate-50 flex items-center justify-center gap-2 text-slate-400">
+            <Copyright className="w-4 h-4" />
+            <span className="text-[10px] font-bold uppercase tracking-widest">
+              2026 MeuboLSO — Eurico Mavungo
+            </span>
+          </div>
         </div>
       </div>
     </div>

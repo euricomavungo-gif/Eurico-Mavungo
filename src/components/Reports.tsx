@@ -26,6 +26,7 @@ const Reports: React.FC<ReportsProps> = ({ transactions, shoppingItems }) => {
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
     doc.text(`Relatório Gerado em: ${now.toLocaleString()}`, 14, 28);
+    doc.text('© 2026 MeuboLSO — Eurico Mavungo', 140, 28);
     doc.line(14, 32, 196, 32);
 
     if (type === 'monthly') {
