@@ -31,7 +31,11 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
       });
       if (error) throw error;
     } catch (error: any) {
-      alert(error.message || 'Erro ao entrar com Google');
+      if (error.message?.includes('provider is not enabled')) {
+        alert('O login com Google não está ativado no seu painel do Supabase. Vá em Authentication > Providers > Google e ative-o.');
+      } else {
+        alert(error.message || 'Erro ao entrar com Google');
+      }
     }
   };
 
