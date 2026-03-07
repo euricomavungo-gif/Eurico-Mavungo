@@ -209,30 +209,38 @@ const App: React.FC = () => {
   };
 
   const toggleShoppingItem = async (id: string) => {
-    const item = shoppingItems.find(i => i.id === id);
-    if (!item) return;
-    
-    const newChecked = !item.checked;
-    const checkedInMonth = newChecked ? selectedMonth : null;
-    
-    // Atualização Otimista
-    setShoppingItems(prev => prev.map(i => i.id === id ? { ...i, checked: newChecked, checkedInMonth: checkedInMonth || undefined } : i));
-    triggerSync();
-    
-    if (isSupabaseConfigured && currentUser && currentUser.id !== 'demo-user') {
-      try {
-        const { error } = await supabase.from('shopping_items').update({ 
+    setShoppingItems(prev => {
+      const itemIndex = prev.findIndex(i => i.id === id);
+      if (itemIndex === -1) return prev;
+      
+      const item = prev[itemIndex];
+      const newChecked = !item.checked;
+      const checkedInMonth = newChecked ? selectedMonth : null;
+      
+      const updatedItems = [...prev];
+      updatedItems[itemIndex] = { 
+        ...item, 
+        checked: newChecked, 
+        checkedInMonth: checkedInMonth || undefined 
+      };
+      
+      // Sincronizar com Supabase em background
+      if (isSupabaseConfigured && currentUser && currentUser.id !== 'demo-user') {
+        supabase.from('shopping_items').update({ 
           checked: newChecked,
           checkedInMonth: checkedInMonth
-        }).eq('id', id);
-        
-        if (error) throw error;
-      } catch (error) {
-        console.error('Error updating shopping item:', error);
-        // Rollback on error
-        setShoppingItems(prev => prev.map(i => i.id === id ? item : i));
+        }).eq('id', id).then(({ error }) => {
+          if (error) {
+            console.error('Error updating shopping item:', error);
+            // Reverter estado em caso de erro crítico
+            setShoppingItems(current => current.map(i => i.id === id ? item : i));
+          }
+        });
       }
-    }
+      
+      triggerSync();
+      return updatedItems;
+    });
   };
 
   const deleteTransaction = async (id: string) => {

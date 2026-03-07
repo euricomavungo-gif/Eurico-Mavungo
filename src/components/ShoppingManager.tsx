@@ -30,21 +30,19 @@ const ShoppingList: React.FC<ShoppingListProps> = ({ list, isPriority, onToggle,
     </div>
     <div className="space-y-2">
       {list.map(item => (
-        <div key={item.id} className={`flex items-center justify-between p-3 bg-white rounded-2xl border ${item.checked ? 'border-emerald-100 opacity-60' : 'border-slate-100'} hover:border-emerald-200 transition-all shadow-sm group`}>
+        <div 
+          key={item.id} 
+          onClick={() => onToggle(item.id)}
+          className={`flex items-center justify-between p-3 bg-white rounded-2xl border cursor-pointer select-none ${item.checked ? 'border-emerald-100 opacity-60' : 'border-slate-100'} hover:border-emerald-200 transition-all shadow-sm group`}
+        >
           <div className="flex items-center gap-3">
-            <button 
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onToggle(item.id);
-              }}
+            <div 
               className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${
                 item.checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 border-slate-200 text-transparent'
               }`}
             >
-              <CheckCircle2 className="w-4 h-4 pointer-events-none" />
-            </button>
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
             <div>
               <p className={`font-bold text-slate-800 text-sm leading-none mb-1 ${item.checked ? 'line-through text-slate-400' : ''}`}>{item.name}</p>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{item.category}</p>
@@ -56,7 +54,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({ list, isPriority, onToggle,
             </span>
             <button 
               type="button"
-              onClick={() => onDelete(item.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(item.id);
+              }}
               className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
             >
               <Trash2 className="w-4 h-4" />
