@@ -40,6 +40,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   const [categories, setCategories] = useState({
     income: INCOME_CATEGORIES,
@@ -55,34 +56,31 @@ const App: React.FC = () => {
 
   // Load data from Supabase or LocalStorage
   useEffect(() => {
-    const loadLocalData = () => {
+    let mounted = true;
+
+    const loadData = async (userId: string) => {
+      setIsSyncing(true);
+      try {
+        await fetchUserData(userId);
+        if (mounted) setIsDataLoaded(true);
+      } catch (err) {
+        console.error('Error loading data:', err);
+      } finally {
+        if (mounted) setIsSyncing(false);
+      }
+    };
+
+    const loadLocal = () => {
       const savedTx = localStorage.getItem('meubolso_transactions');
       const savedShop = localStorage.getItem('meubolso_shopping');
       if (savedTx) setTransactions(JSON.parse(savedTx));
       if (savedShop) setShoppingItems(JSON.parse(savedShop));
-    };
-
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const user: User = {
-          id: session.user.id,
-          name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'Usuário',
-          email: session.user.email || '',
-          createdAt: new Date(session.user.created_at).getTime(),
-          subscriptionStatus: SubscriptionStatus.ACTIVE
-        };
-        setCurrentUser(user);
-        fetchUserData(user.id);
-      } else {
-        loadLocalData();
-      }
+      if (mounted) setIsDataLoaded(true);
     };
 
     if (isSupabaseConfigured) {
-      checkSession();
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!mounted) return;
         if (session?.user) {
           const user: User = {
             id: session.user.id,
@@ -92,26 +90,57 @@ const App: React.FC = () => {
             subscriptionStatus: SubscriptionStatus.ACTIVE
           };
           setCurrentUser(user);
-          fetchUserData(user.id);
+          loadData(user.id);
         } else {
-          setCurrentUser(null);
-          loadLocalData();
+          loadLocal();
         }
       });
 
-      return () => subscription.unsubscribe();
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (!mounted) return;
+        if (session?.user) {
+          const user: User = {
+            id: session.user.id,
+            name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || 'Usuário',
+            email: session.user.email || '',
+            createdAt: new Date(session.user.created_at).getTime(),
+            subscriptionStatus: SubscriptionStatus.ACTIVE
+          };
+          setCurrentUser(user);
+          if (event === 'SIGNED_IN') {
+            loadData(user.id);
+          }
+        } else {
+          setCurrentUser(null);
+          if (event === 'SIGNED_OUT') {
+            setTransactions([]);
+            setShoppingItems([]);
+            localStorage.removeItem('meubolso_transactions');
+            localStorage.removeItem('meubolso_shopping');
+          }
+          loadLocal();
+        }
+      });
+
+      return () => {
+        mounted = false;
+        subscription.unsubscribe();
+      };
     } else {
-      loadLocalData();
+      loadLocal();
+      return () => { mounted = false; };
     }
   }, []);
 
   // Save to LocalStorage whenever data changes
   useEffect(() => {
+    if (!isDataLoaded) return; // Não salvar antes de carregar os dados iniciais
+
     if (!currentUser || currentUser.id === 'demo-user') {
       localStorage.setItem('meubolso_transactions', JSON.stringify(transactions));
       localStorage.setItem('meubolso_shopping', JSON.stringify(shoppingItems));
     }
-  }, [transactions, shoppingItems, currentUser]);
+  }, [transactions, shoppingItems, currentUser, isDataLoaded]);
 
   const fetchUserData = async (userId: string) => {
     if (!isSupabaseConfigured) {
@@ -137,7 +166,14 @@ const App: React.FC = () => {
         .eq('userId', userId);
       
       if (shopError) throw shopError;
-      if (shopData) setShoppingItems(shopData);
+      if (shopData) {
+        setShoppingItems(prev => {
+          // Preservar estados locais que podem estar em transição
+          // Se o item já existe localmente, podemos querer ser cautelosos ao sobrescrever
+          // Mas para simplificar e garantir consistência com o banco:
+          return shopData;
+        });
+      }
 
       // Fetch categories/profile
       const { data: profileData, error: profileError } = await supabase
@@ -208,39 +244,49 @@ const App: React.FC = () => {
     }
   };
 
+  const lastToggleTime = React.useRef<{ [key: string]: number }>({});
+
   const toggleShoppingItem = async (id: string) => {
-    setShoppingItems(prev => {
-      const itemIndex = prev.findIndex(i => i.id === id);
-      if (itemIndex === -1) return prev;
-      
-      const item = prev[itemIndex];
-      const newChecked = !item.checked;
-      const checkedInMonth = newChecked ? selectedMonth : null;
-      
-      const updatedItems = [...prev];
-      updatedItems[itemIndex] = { 
-        ...item, 
-        checked: newChecked, 
-        checkedInMonth: checkedInMonth || undefined 
-      };
-      
-      // Sincronizar com Supabase em background
-      if (isSupabaseConfigured && currentUser && currentUser.id !== 'demo-user') {
-        supabase.from('shopping_items').update({ 
-          checked: newChecked,
-          checkedInMonth: checkedInMonth
-        }).eq('id', id).then(({ error }) => {
-          if (error) {
-            console.error('Error updating shopping item:', error);
-            // Reverter estado em caso de erro crítico
-            setShoppingItems(current => current.map(i => i.id === id ? item : i));
-          }
-        });
+    // Throttle: Evitar múltiplos cliques rápidos no mesmo item (dentro de 500ms)
+    const now = Date.now();
+    if (lastToggleTime.current[id] && now - lastToggleTime.current[id] < 500) {
+      return;
+    }
+    lastToggleTime.current[id] = now;
+
+    // 1. Encontrar o item no estado atual para calcular os novos valores
+    const itemToUpdate = shoppingItems.find(i => i.id === id);
+    if (!itemToUpdate) return;
+    
+    const newChecked = !itemToUpdate.checked;
+    
+    // 2. Atualização Otimista Imediata (Síncrona)
+    setShoppingItems(prev => prev.map(i => 
+      i.id === id ? { ...i, checked: newChecked } : i
+    ));
+    
+    triggerSync();
+    
+    // 3. Sincronização com Supabase (Assíncrona)
+    if (isSupabaseConfigured && currentUser && currentUser.id !== 'demo-user') {
+      try {
+        const { error } = await supabase.from('shopping_items')
+          .update({ 
+            checked: newChecked
+          })
+          .eq('id', id)
+          .eq('userId', currentUser.id);
+        
+        if (error) {
+          console.error('Erro ao atualizar item no Supabase:', error);
+          // Reverter estado em caso de erro crítico para manter consistência com o banco
+          setShoppingItems(prev => prev.map(i => i.id === id ? itemToUpdate : i));
+        }
+      } catch (err) {
+        console.error('Falha na sincronização:', err);
+        setShoppingItems(prev => prev.map(i => i.id === id ? itemToUpdate : i));
       }
-      
-      triggerSync();
-      return updatedItems;
-    });
+    }
   };
 
   const deleteTransaction = async (id: string) => {
@@ -278,13 +324,11 @@ const App: React.FC = () => {
   );
 
   const currentMonthShopping = useMemo(() => 
-    shoppingItems.filter(i => 
-      !i.isFuture && (
-        i.date.startsWith(selectedMonth) || 
-        (i.date < selectedMonth && !i.checked) ||
-        (i.date < selectedMonth && i.checkedInMonth === selectedMonth)
-      )
-    ), [shoppingItems, selectedMonth]
+    shoppingItems.filter(i => !i.isFuture), [shoppingItems]
+  );
+
+  const futureShopping = useMemo(() => 
+    shoppingItems.filter(i => i.isFuture), [shoppingItems]
   );
 
   if (!currentUser) {
@@ -340,7 +384,7 @@ const App: React.FC = () => {
         />;
       case 'future':
         return <ShoppingManager 
-          items={shoppingItems.filter(i => i.isFuture)} 
+          items={futureShopping} 
           onAdd={(item) => addShoppingItem({ ...item, isFuture: true })} 
           onDelete={deleteShoppingItem}
           onToggle={toggleShoppingItem}

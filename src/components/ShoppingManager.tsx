@@ -32,7 +32,10 @@ const ShoppingList: React.FC<ShoppingListProps> = ({ list, isPriority, onToggle,
       {list.map(item => (
         <div 
           key={item.id} 
-          onClick={() => onToggle(item.id)}
+          onClick={(e) => {
+            e.preventDefault();
+            onToggle(item.id);
+          }}
           className={`flex items-center justify-between p-3 bg-white rounded-2xl border cursor-pointer select-none ${item.checked ? 'border-emerald-100 opacity-60' : 'border-slate-100'} hover:border-emerald-200 transition-all shadow-sm group`}
         >
           <div className="flex items-center gap-3">
