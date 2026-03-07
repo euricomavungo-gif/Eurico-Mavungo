@@ -13,6 +13,66 @@ interface ShoppingManagerProps {
   onAddCategory: (cat: string) => void;
 }
 
+interface ShoppingListProps {
+  list: ShoppingItem[];
+  isPriority: boolean;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+}
+
+const ShoppingList: React.FC<ShoppingListProps> = ({ list, isPriority, onToggle, onDelete }) => (
+  <div className="space-y-3">
+    <div className="flex items-center gap-2 px-2">
+      {isPriority ? <CheckCircle2 className="text-emerald-600 w-4 h-4" /> : <AlertCircle className="text-amber-500 w-4 h-4" />}
+      <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest">
+        {isPriority ? 'Prioritárias' : 'Não Prioritárias'}
+      </h4>
+    </div>
+    <div className="space-y-2">
+      {list.map(item => (
+        <div key={item.id} className={`flex items-center justify-between p-3 bg-white rounded-2xl border ${item.checked ? 'border-emerald-100 opacity-60' : 'border-slate-100'} hover:border-emerald-200 transition-all shadow-sm group`}>
+          <div className="flex items-center gap-3">
+            <button 
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggle(item.id);
+              }}
+              className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${
+                item.checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 border-slate-200 text-transparent'
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4 pointer-events-none" />
+            </button>
+            <div>
+              <p className={`font-bold text-slate-800 text-sm leading-none mb-1 ${item.checked ? 'line-through text-slate-400' : ''}`}>{item.name}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{item.category}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`font-black text-sm ${item.checked ? 'text-slate-300' : 'text-emerald-600'}`}>
+              Kz {item.price.toLocaleString('pt-PT', { minimumFractionDigits: 1 })}
+            </span>
+            <button 
+              type="button"
+              onClick={() => onDelete(item.id)}
+              className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      ))}
+      {list.length === 0 && (
+        <div className="py-4 px-6 bg-slate-50/50 border-2 border-dashed border-slate-100 rounded-2xl text-center text-slate-400 text-xs italic">
+          Nenhum item.
+        </div>
+      )}
+    </div>
+  </div>
+);
+
 const ShoppingManager: React.FC<ShoppingManagerProps> = ({ items, onAdd, onDelete, onToggle, title, categories, onAddCategory }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showCatInput, setShowCatInput] = useState(false);
@@ -26,53 +86,6 @@ const ShoppingManager: React.FC<ShoppingManagerProps> = ({ items, onAdd, onDelet
 
   const priorityItems = items.filter(i => i.isPriority);
   const nonPriorityItems = items.filter(i => !i.isPriority);
-
-  const ShoppingList = ({ list, isPriority }: { list: ShoppingItem[], isPriority: boolean }) => (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 px-2">
-        {isPriority ? <CheckCircle2 className="text-emerald-600 w-4 h-4" /> : <AlertCircle className="text-amber-500 w-4 h-4" />}
-        <h4 className="text-sm font-black text-slate-800 uppercase tracking-widest">
-          {isPriority ? 'Prioritárias' : 'Não Prioritárias'}
-        </h4>
-      </div>
-      <div className="space-y-2">
-        {list.map(item => (
-          <div key={item.id} className={`flex items-center justify-between p-3 bg-white rounded-2xl border ${item.checked ? 'border-emerald-100 opacity-60' : 'border-slate-100'} hover:border-emerald-200 transition-all shadow-sm group`}>
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => onToggle(item.id)}
-                className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                  item.checked ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 border-slate-200 text-transparent'
-                }`}
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-              </button>
-              <div>
-                <p className={`font-bold text-slate-800 text-sm leading-none mb-1 ${item.checked ? 'line-through text-slate-400' : ''}`}>{item.name}</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{item.category}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className={`font-black text-sm ${item.checked ? 'text-slate-300' : 'text-emerald-600'}`}>
-                Kz {item.price.toLocaleString('pt-PT', { minimumFractionDigits: 1 })}
-              </span>
-              <button 
-                onClick={() => onDelete(item.id)}
-                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ))}
-        {list.length === 0 && (
-          <div className="py-4 px-6 bg-slate-50/50 border-2 border-dashed border-slate-100 rounded-2xl text-center text-slate-400 text-xs italic">
-            Nenhum item.
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-10">
@@ -105,8 +118,8 @@ const ShoppingManager: React.FC<ShoppingManagerProps> = ({ items, onAdd, onDelet
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <ShoppingList list={priorityItems} isPriority={true} />
-        <ShoppingList list={nonPriorityItems} isPriority={false} />
+        <ShoppingList list={priorityItems} isPriority={true} onToggle={onToggle} onDelete={onDelete} />
+        <ShoppingList list={nonPriorityItems} isPriority={false} onToggle={onToggle} onDelete={onDelete} />
       </div>
 
       {showAddForm && (

@@ -215,16 +215,19 @@ const App: React.FC = () => {
     const newChecked = !item.checked;
     const checkedInMonth = newChecked ? selectedMonth : null;
     
+    // Atualização Otimista
     setShoppingItems(prev => prev.map(i => i.id === id ? { ...i, checked: newChecked, checkedInMonth: checkedInMonth || undefined } : i));
     triggerSync();
     
     if (isSupabaseConfigured && currentUser && currentUser.id !== 'demo-user') {
-      const { error } = await supabase.from('shopping_items').update({ 
-        checked: newChecked,
-        checkedInMonth: checkedInMonth
-      }).eq('id', id);
-      
-      if (error) {
+      try {
+        const { error } = await supabase.from('shopping_items').update({ 
+          checked: newChecked,
+          checkedInMonth: checkedInMonth
+        }).eq('id', id);
+        
+        if (error) throw error;
+      } catch (error) {
         console.error('Error updating shopping item:', error);
         // Rollback on error
         setShoppingItems(prev => prev.map(i => i.id === id ? item : i));
