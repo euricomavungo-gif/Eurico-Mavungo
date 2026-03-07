@@ -53,8 +53,15 @@ const App: React.FC = () => {
     setTimeout(() => setIsSyncing(false), 800);
   };
 
-  // Load data from Supabase
+  // Load data from Supabase or LocalStorage
   useEffect(() => {
+    const loadLocalData = () => {
+      const savedTx = localStorage.getItem('meubolso_transactions');
+      const savedShop = localStorage.getItem('meubolso_shopping');
+      if (savedTx) setTransactions(JSON.parse(savedTx));
+      if (savedShop) setShoppingItems(JSON.parse(savedShop));
+    };
+
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -67,6 +74,8 @@ const App: React.FC = () => {
         };
         setCurrentUser(user);
         fetchUserData(user.id);
+      } else {
+        loadLocalData();
       }
     };
 
@@ -86,14 +95,23 @@ const App: React.FC = () => {
           fetchUserData(user.id);
         } else {
           setCurrentUser(null);
-          setTransactions([]);
-          setShoppingItems([]);
+          loadLocalData();
         }
       });
 
       return () => subscription.unsubscribe();
+    } else {
+      loadLocalData();
     }
   }, []);
+
+  // Save to LocalStorage whenever data changes
+  useEffect(() => {
+    if (!currentUser || currentUser.id === 'demo-user') {
+      localStorage.setItem('meubolso_transactions', JSON.stringify(transactions));
+      localStorage.setItem('meubolso_shopping', JSON.stringify(shoppingItems));
+    }
+  }, [transactions, shoppingItems, currentUser]);
 
   const fetchUserData = async (userId: string) => {
     if (!isSupabaseConfigured) {
@@ -195,15 +213,22 @@ const App: React.FC = () => {
     if (!item) return;
     
     const newChecked = !item.checked;
-    const checkedInMonth = newChecked ? selectedMonth : undefined;
+    const checkedInMonth = newChecked ? selectedMonth : null;
     
-    setShoppingItems(prev => prev.map(i => i.id === id ? { ...i, checked: newChecked, checkedInMonth } : i));
+    setShoppingItems(prev => prev.map(i => i.id === id ? { ...i, checked: newChecked, checkedInMonth: checkedInMonth || undefined } : i));
     triggerSync();
-    if (isSupabaseConfigured) {
-      await supabase.from('shopping_items').update({ 
+    
+    if (isSupabaseConfigured && currentUser && currentUser.id !== 'demo-user') {
+      const { error } = await supabase.from('shopping_items').update({ 
         checked: newChecked,
         checkedInMonth: checkedInMonth
       }).eq('id', id);
+      
+      if (error) {
+        console.error('Error updating shopping item:', error);
+        // Rollback on error
+        setShoppingItems(prev => prev.map(i => i.id === id ? item : i));
+      }
     }
   };
 

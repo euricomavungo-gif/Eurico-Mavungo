@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Info, Copyright, Zap, ShieldCheck, Database, Github, Globe } from 'lucide-react';
+import { Info, Copyright, Zap, ShieldCheck, Database, Github, Globe, Phone, Mail } from 'lucide-react';
 
 const About: React.FC = () => {
   return (
@@ -71,6 +71,12 @@ const About: React.FC = () => {
                 </div>
                 <div className="px-4 py-2 bg-white/10 rounded-full text-xs font-bold flex items-center gap-2">
                   <Github className="w-3 h-3" /> @euricomavungo
+                </div>
+                <div className="px-4 py-2 bg-white/10 rounded-full text-xs font-bold flex items-center gap-2">
+                  <Phone className="w-3 h-3" /> (+244) 935 787 153
+                </div>
+                <div className="px-4 py-2 bg-white/10 rounded-full text-xs font-bold flex items-center gap-2">
+                  <Mail className="w-3 h-3" /> euricomavungo@gmail.com
                 </div>
               </div>
             </div>
