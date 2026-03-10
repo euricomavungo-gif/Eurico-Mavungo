@@ -22,11 +22,27 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
       alert('Modo Demo: Google Login não disponível sem configuração do Supabase.');
       return;
     }
+    
+    // Verificar se está em um iframe
+    const isIframe = window.self !== window.top;
+    if (isIframe) {
+      const confirmOpen = confirm(
+        "O login com Google pode falhar dentro do modo de visualização devido a restrições do navegador.\n\n" +
+        "Deseja tentar assim mesmo? Se falhar, use o botão 'Abrir em nova aba' no canto superior direito."
+      );
+      if (!confirmOpen) return;
+    }
+
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          // Garantir que a URL de redirecionamento seja limpa e absoluta
+          redirectTo: window.location.origin.replace(/\/$/, '') + '/',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
       if (error) throw error;
